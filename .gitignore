@@ -3,6 +3,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 
-# 下载的行情缓存和生成的报告不进仓库
+# 下载的行情缓存和 baseline 生成的 CSV 不进仓库
 data/
-reports/
+reports/*.csv
