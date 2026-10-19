@@ -38,6 +38,46 @@ def load_portfolio(folder: Path) -> tuple[pd.DataFrame, dict]:
     return holdings, account
 
 
+def trigger_price(history: pd.Series, z_target: float = -2.0, window: int = 20) -> float:
+    """下一个交易日收盘价低于这个价格时，z 值会 ≤ z_target（布林带随新收盘价一起变化）。"""
+    recent = history.dropna().iloc[-(window - 1):].to_numpy()
+    if len(recent) < window - 1:
+        return np.nan
+
+    def z_of(price: float) -> float:
+        values = np.append(recent, price)
+        return (price - values.mean()) / values.std(ddof=1)
+
+    low, high = recent[-1] * 0.3, recent[-1] * 1.5
+    if z_of(high) < z_target:
+        return high
+    for _ in range(60):
+        mid_price = (low + high) / 2
+        low, high = (mid_price, high) if z_of(mid_price) < z_target else (low, mid_price)
+    return (low + high) / 2
+
+
+def trigger_table(closes: pd.DataFrame, tickers: list[str], group_of: dict[str, str]) -> pd.DataFrame:
+    """每只股票下一个交易日的买入触发价、不追高线（中轨）和 200 日线。"""
+    day = closes.index[-1]
+    z = signals.zscore(closes[tickers]).loc[day]
+    mid = signals.sma(closes[tickers], 20).loc[day]
+    sma200 = signals.sma(closes[tickers], 200).loc[day]
+    rows = []
+    for t in tickers:
+        last, trig = closes.at[day, t], trigger_price(closes[t])
+        if z[t] <= -2 and last > sma200[t]:
+            state = "已触发：可按收盘价买入（低于中轨即可）"
+        elif trig <= sma200[t]:
+            state = "触发价低于 200 日线：跌到那里也不买"
+        else:
+            state = "未触发：收盘 ≤ 触发价才买"
+        rows.append({"股票": t, "子行业": group_of.get(t, "ETF"), "最新收盘": last, "布林z值": round(z[t], 2),
+                     "明日触发价": trig, "距触发价": trig / last - 1, "中轨(不追高线)": mid[t],
+                     "200日线": sma200[t], "状态": state})
+    return pd.DataFrame(rows).sort_values("距触发价", ascending=False)
+
+
 def make_orders(closes: pd.DataFrame, holdings: pd.DataFrame, account: dict) -> dict[str, pd.DataFrame]:
     semis = [t for ts in TARGETS.values() for t in ts if t in closes.columns]
     group_of = {t: g for g, ts in TARGETS.items() for t in ts}
@@ -100,12 +140,14 @@ def make_orders(closes: pd.DataFrame, holdings: pd.DataFrame, account: dict) -> 
         "SMH布林z值": round(z.at[day, "SMH"], 2), "SMH相对200日线": price["SMH"] / sma200.at[day, "SMH"] - 1,
         "加码仓净值": overlay_equity, "空仓位": max(free_slots, 0), "核心仓还差": core_gap,
     }])
-    return {"market": market, "sells": pd.DataFrame(sells), "keep": pd.DataFrame(keep),
+    triggers = trigger_table(closes, semis + ["SMH"], group_of)
+    return {"market": market, "triggers": triggers, "sells": pd.DataFrame(sells), "keep": pd.DataFrame(keep),
             "buys": pd.DataFrame(buys), "watch": pd.DataFrame(watch), "others": pd.DataFrame(others)}
 
 
-PERCENT = {"浮动盈亏", "相对200日线", "16只里跌破下轨的比例", "SMH相对200日线"}
-MONEY = {"买入价", "最新收盘", "中轨(卖出线)", "止损价", "下轨", "中轨", "建议金额", "市值", "加码仓净值", "核心仓还差"}
+PERCENT = {"浮动盈亏", "相对200日线", "16只里跌破下轨的比例", "SMH相对200日线", "距触发价"}
+MONEY = {"买入价", "最新收盘", "中轨(卖出线)", "止损价", "下轨", "中轨", "建议金额", "市值", "加码仓净值", "核心仓还差",
+         "明日触发价", "中轨(不追高线)", "200日线"}
 
 
 def _render(table: pd.DataFrame) -> str:
@@ -150,6 +192,8 @@ def write_report(orders: dict[str, pd.DataFrame], out: Path) -> list[str]:
         "## 加码仓：继续持有（卖出线和止损价）\n\n" + _render(orders["keep"]),
         "## 新信号（跌破下轨且在 200 日线上方，按 z 值排序）\n\n" + _render(orders["buys"]),
         "## 接近下轨，明天可能触发\n\n" + _render(orders["watch"]),
+        "## 下一个交易日的买入触发价\n\n收盘价 ≤ 明日触发价就会出现买入信号（还要在 200 日线上方）；"
+        "已经触发的，收盘价只要还低于中轨就可以买，高于中轨就不追。按距离从近到远排序。\n\n" + _render(orders["triggers"]),
         "## 核心仓和分散仓\n\n" + _render(orders["others"]),
     ]
     (out / "README.md").write_text("\n\n".join(sections) + "\n", encoding="utf-8")

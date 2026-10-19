@@ -47,3 +47,15 @@ def test_load_portfolio_skips_comments(tmp_path):
     holdings, account = load_portfolio(tmp_path)
     assert holdings.iloc[0]["ticker"] == "SMH" and holdings.iloc[0]["role"] == "core"
     assert account["overlay_slots"] == 2
+
+
+def test_trigger_price_puts_next_close_on_the_lower_band():
+    from riskeval import signals
+    from riskeval.daily_orders import trigger_price
+
+    rng = np.random.default_rng(1)
+    history = pd.Series(100 + rng.normal(0, 2, 60).cumsum())
+    price = trigger_price(history)
+    extended = pd.concat([history, pd.Series([price])], ignore_index=True)
+    assert signals.zscore(extended).iloc[-1] == pytest.approx(-2.0, abs=1e-6)
+    assert price < history.iloc[-1]
