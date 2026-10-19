@@ -72,6 +72,30 @@ def _download(batch: list[str], start: str, threads: bool, pause: float) -> pd.D
     return closes
 
 
+def download_ohlc(tickers: list[str], start: str | None = None, interval: str = "1d",
+                  period: str | None = None, pause: float = 2.0) -> dict[str, pd.DataFrame]:
+    """下载复权的开高低收（每个字段一张"时间 × 代码"的表）。小时线只能取最近约 730 天（period="730d"）。"""
+    import yfinance as yf
+
+    frames: dict[str, list[pd.DataFrame]] = {f: [] for f in ["Open", "High", "Low", "Close"]}
+    for i in range(0, len(tickers), 50):
+        batch = tickers[i:i + 50]
+        data = yf.download(batch, start=start, period=period, interval=interval, auto_adjust=True,
+                           progress=False, threads=False)
+        for field in frames:
+            part = data[field] if isinstance(data.columns, pd.MultiIndex) else data[[field]].set_axis(batch, axis=1)
+            frames[field].append(part)
+        time.sleep(pause)
+    out = {}
+    for field, parts in frames.items():
+        table = pd.concat(parts, axis=1)
+        table = table.loc[:, ~table.columns.duplicated()].dropna(axis=1, how="all").sort_index()
+        if interval == "1d":
+            table.index = pd.DatetimeIndex(table.index).tz_localize(None).normalize()
+        out[field.lower()] = table
+    return out
+
+
 def market_caps(tickers: list[str], pause: float = 0.5) -> pd.Series:
     """当前市值；取不到的记为 NaN。"""
     import yfinance as yf
