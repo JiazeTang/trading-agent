@@ -39,20 +39,30 @@ def sp1500_tickers() -> list[str]:
 
 
 def download_closes(tickers: list[str], start: str, chunk: int = 200, pause: float = 2.0) -> pd.DataFrame:
-    """分批下载复权收盘价（日期 × 代码），批次之间暂停，避免触发限流。"""
+    """分批下载复权收盘价（日期 × 代码），批次之间暂停，避免触发限流。
+
+    并发下载偶尔会有个别代码失败（如 yfinance 本地缓存被锁），最后对缺失的代码单线程重试。
+    """
+    frames = [_download(tickers[i:i + chunk], start, threads=True, pause=pause) for i in range(0, len(tickers), chunk)]
+    closes = pd.concat(frames, axis=1)
+    closes = closes.loc[:, ~closes.columns.duplicated()].dropna(axis=1, how="all")
+    for _ in range(2):
+        missing = [t for t in tickers if t not in closes.columns]
+        if not missing:
+            break
+        retry = _download(missing, start, threads=False, pause=pause).dropna(axis=1, how="all")
+        closes = pd.concat([closes, retry], axis=1)
+    return closes.sort_index()
+
+
+def _download(batch: list[str], start: str, threads: bool, pause: float) -> pd.DataFrame:
     import yfinance as yf
 
-    frames = []
-    for i in range(0, len(tickers), chunk):
-        batch = tickers[i:i + chunk]
-        data = yf.download(batch, start=start, auto_adjust=True, progress=False, threads=True)
-        closes = data["Close"] if isinstance(data.columns, pd.MultiIndex) else data[["Close"]].set_axis(batch, axis=1)
-        frames.append(closes)
-        time.sleep(pause)
-    closes = pd.concat(frames, axis=1)
-    closes = closes.loc[:, ~closes.columns.duplicated()]
+    data = yf.download(batch, start=start, auto_adjust=True, progress=False, threads=threads)
+    closes = data["Close"] if isinstance(data.columns, pd.MultiIndex) else data[["Close"]].set_axis(batch, axis=1)
     closes.index = pd.DatetimeIndex(closes.index).tz_localize(None).normalize()
-    return closes.dropna(axis=1, how="all").sort_index()
+    time.sleep(pause)
+    return closes
 
 
 def market_caps(tickers: list[str], pause: float = 0.5) -> pd.Series:

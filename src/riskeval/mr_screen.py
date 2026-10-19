@@ -31,7 +31,7 @@ EPISODE_GAP = 10  # 相隔超过这么多交易日的普跌才算新的一次
 
 
 def compute(closes: pd.DataFrame, smh: pd.Series) -> dict[str, pd.DataFrame]:
-    group_of = {t: g for g, ts in TARGETS.items() for t in ts}
+    group_of = {t: g for g, ts in TARGETS.items() for t in ts if t in closes.columns}
     z = signals.zscore(closes)
     sma200 = signals.sma(closes, 200)
     below = z <= -2
@@ -210,7 +210,10 @@ def main(argv: list[str] | None = None) -> None:
 
     tickers = [t for ts in TARGETS.values() for t in ts]
     data = daily_data.download_closes(tickers + ["SMH"], args.start, chunk=50)
-    results = compute(data[tickers], data["SMH"].dropna())
+    missing = [t for t in tickers if t not in data.columns]
+    if missing:
+        print("以下代码没有下载到数据，本次跳过：", missing)
+    results = compute(data[[t for t in tickers if t in data.columns]], data["SMH"].dropna())
     write_report(results, Path(args.out), data.index[-1])
     print(f"已写入 {args.out}/README.md")
 
