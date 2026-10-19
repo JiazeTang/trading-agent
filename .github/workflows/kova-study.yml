@@ -1,0 +1,42 @@
+# 在 GitHub 的服务器上下载日线数据并跑 kova_study，只把汇总结果提交回仓库（原始价格不提交）。
+name: kova-study
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/vigilant-ride-f8334c]
+    paths:
+      - "src/riskeval/kova_study.py"
+      - "src/riskeval/signals.py"
+      - "src/riskeval/forward.py"
+      - "src/riskeval/daily_data.py"
+      - ".github/workflows/kova-study.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kova-study
+  cancel-in-progress: true
+
+jobs:
+  study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev,study]"
+      - run: pytest -q
+      - run: python -m riskeval.kova_study --out reports/kova_study
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/kova_study
+          git diff --cached --quiet && exit 0
+          git commit -m "Update kova_study results"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
