@@ -82,7 +82,8 @@ def stock_table(trades: pd.DataFrame, baselines: pd.Series) -> pd.DataFrame:
 
 def out_of_sample(trades: pd.DataFrame) -> pd.DataFrame:
     """用 SPLIT 之前的交易排名，看之后的表现。"""
-    before, after = trades[trades["date"] < SPLIT], trades[trades["date"] >= SPLIT]
+    split = pd.Timestamp(SPLIT)
+    before, after = trades[trades["date"] < split], trades[trades["date"] >= split]
     g = before.groupby("ticker")["ret"]
     rank = pd.DataFrame({"n": g.size(), "wins": g.apply(lambda r: (r > 0).sum())})
     rank = rank[rank["n"] >= MIN_TRADES // 2]
@@ -109,6 +110,7 @@ def run(closes: pd.DataFrame, groups: dict[str, str]) -> dict[str, pd.DataFrame]
     rule = ((z <= -2) & above).fillna(False)
 
     trades = pd.concat([simulate(closes[t], rule[t]).assign(ticker=t) for t in closes.columns], ignore_index=True)
+    trades["date"] = pd.to_datetime(trades["date"])  # 没有交易的股票是空表，合并后日期列会变成 object
     baselines = pd.Series({t: baseline_win(closes[t]) for t in closes.columns})
     table = stock_table(trades, baselines)
     table["分组"] = pd.Series(groups).reindex(table.index).fillna("S&P 500")

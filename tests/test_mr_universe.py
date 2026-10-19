@@ -22,3 +22,18 @@ def test_simulate_skips_signals_while_holding():
     assert list(trades["date"]) == [dates[0], dates[60]]
     assert trades["ret"].iloc[0] == pytest.approx(close.iloc[1 + HOLD] / close.iloc[1] - 1)
     assert (trades["mae"] == 0).all()
+
+
+def test_run_handles_stocks_without_trades():
+    from riskeval.mr_universe import run
+
+    dates = pd.bdate_range("2015-01-02", periods=900)
+    rng = np.random.default_rng(0)
+    closes = pd.DataFrame(100 * np.exp(np.cumsum(rng.normal(0, 0.02, (900, 30)), 0)), index=dates)
+    closes.columns = [f"S{i}" for i in range(30)]
+    closes["FLAT"] = np.linspace(100, 300, 900)  # 一直上涨，从不跌破下轨
+
+    results = run(closes, {})
+
+    assert "FLAT" not in set(results["all_stocks"]["股票"])
+    assert len(results["oos"]) == 3
