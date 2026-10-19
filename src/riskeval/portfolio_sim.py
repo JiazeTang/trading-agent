@@ -142,6 +142,18 @@ def history_distribution(closes: pd.DataFrame, semis: list[str], window: int) ->
             "年化波动": daily.std() * np.sqrt(252), "最大回撤": (sleeve / sleeve.cummax() - 1).min(),
             "每年交易笔数": len(log) / years, "空仓时间比例": _idle_share(sleeve),
         })
+    # 对照：同样 4000 等权持有这 16 只（每日再平衡），看规则本身贡献了多少
+    daily = closes[semis].pct_change(fill_method=None)
+    daily = daily[daily.index >= HISTORY_START].mean(axis=1).fillna(0)
+    hold = SEMI_CAPITAL * (1 + daily).cumprod()
+    roll = (hold / hold.shift(window) - 1).dropna()
+    years = len(hold) / 252
+    rows.append({"规则": "对照", "出场": "一直持有", "买入": "16只等权", "时间段数": len(roll),
+                 "中位收益": roll.median(), "平均收益": roll.mean(), "最差10%分位": roll.quantile(0.1),
+                 "最好10%分位": roll.quantile(0.9), "亏钱的比例": (roll < 0).mean(),
+                 "2016起年化收益": (hold.iloc[-1] / SEMI_CAPITAL) ** (1 / years) - 1,
+                 "年化波动": daily.std() * np.sqrt(252), "最大回撤": (hold / hold.cummax() - 1).min(),
+                 "每年交易笔数": np.nan, "空仓时间比例": 0.0})
     return pd.DataFrame(rows)
 
 
