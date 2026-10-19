@@ -1,0 +1,7 @@
+# 实际持仓。每次成交后在 GitHub 网页上编辑这个文件（右上角铅笔图标），提交即可。
+# role: core = 核心仓 SMH；overlay = 规则 A 加码仓；hold = 分散仓（REGN / VRTX）
+# shares 填持股数（可以有小数），entry_price 填实际成交均价，entry_date 填买入日期 YYYY-MM-DD。
+# 卖出后把那一行删掉。示例：
+# SMH,core,8.5,282.10,2026-10-20
+# AMD,overlay,3.2,250.00,2026-10-20
+ticker,role,shares,entry_price,entry_date

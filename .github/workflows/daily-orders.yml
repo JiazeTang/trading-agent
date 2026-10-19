@@ -1,0 +1,66 @@
+# 每个交易日收盘后生成操作单（reports/daily_orders/README.md）；有买卖操作时在"每日操作单" Issue 里留言提醒。
+name: daily-orders
+
+on:
+  schedule:
+    - cron: "30 21 * * 1-5"   # 美东收盘后（夏令时 17:30，冬令时 16:30）
+  workflow_dispatch:
+  push:
+    branches: [claude/vigilant-ride-f8334c]
+    paths:
+      - "portfolio/**"
+      - "src/riskeval/daily_orders.py"
+      - ".github/workflows/daily-orders.yml"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: daily-orders
+  cancel-in-progress: true
+
+jobs:
+  orders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev,study]"
+      - run: pytest -q
+      - run: python -m riskeval.daily_orders --out reports/daily_orders
+      - name: Notify on the issue when there is something to do
+        if: github.event_name != 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          day=$(cat reports/daily_orders/date.txt)
+          last=$(cat reports/daily_orders/last_notified.txt 2>/dev/null || true)
+          if [ ! -s reports/daily_orders/todo.txt ] || [ "$day" = "$last" ]; then exit 0; fi
+          number=$(gh issue list --state open --search "每日操作单 in:title" --json number --jq '.[0].number')
+          if [ -z "$number" ]; then
+            number=$(gh issue create --title "每日操作单" --body "每个交易日收盘后，有买卖操作时在这里留言。完整操作单见 reports/daily_orders/README.md。" | grep -o '[0-9]*$')
+          fi
+          {
+            echo "**按 $day 收盘价，下一个交易日收盘前：**"
+            echo
+            sed 's/^/- /' reports/daily_orders/todo.txt
+            echo
+            echo "完整操作单：https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/reports/daily_orders/README.md"
+            echo
+            echo "_规则的机械输出，不是投资建议。_"
+          } > /tmp/comment.md
+          gh issue comment "$number" --body-file /tmp/comment.md
+          echo "$day" > reports/daily_orders/last_notified.txt
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/daily_orders
+          git diff --cached --quiet && exit 0
+          git commit -m "Update daily orders"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
