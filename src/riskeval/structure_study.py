@@ -155,7 +155,8 @@ def _render(table: pd.DataFrame) -> str:
     table = table.copy()
     for column in table.columns:
         if table[column].dtype.kind == "f":
-            fmt = (lambda x: f"{x:.2f}") if column in NOT_PERCENT else (lambda x: f"{x:.1%}")
+            fmt = ((lambda x: f"{x:,.0f}") if column == "仓位" else
+                   (lambda x: f"{x:.2f}") if column in NOT_PERCENT else (lambda x: f"{x:.1%}"))
             table[column] = table[column].map(lambda x, f=fmt: "" if pd.isna(x) else f(x))
     header = "| " + " | ".join(map(str, table.columns)) + " |"
     body = ["| " + " | ".join(map(str, row)) + " |" for row in table.itertuples(index=False)]
