@@ -23,10 +23,17 @@ WIKI_PAGES = {
 USER_AGENT = "Mozilla/5.0 (riskeval research script; low request volume)"
 
 
-def sp1500_tickers() -> list[str]:
+def sp500_tickers() -> list[str]:
+    """S&P 500 当前成分股。"""
+    return sp1500_tickers(["S&P 500"])
+
+
+def sp1500_tickers(indexes: list[str] | None = None) -> list[str]:
     """S&P 500 / 400 / 600 当前成分股，代码转成 Yahoo 格式（BRK.B → BRK-B）。"""
     tickers: set[str] = set()
     for name, url in WIKI_PAGES.items():
+        if indexes and name not in indexes:
+            continue
         html = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=30).text
         for table in pd.read_html(StringIO(html)):
             column = next((c for c in table.columns if str(c).lower() in ("symbol", "ticker symbol", "ticker")), None)
