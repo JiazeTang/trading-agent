@@ -59,3 +59,27 @@ def test_trigger_price_puts_next_close_on_the_lower_band():
     extended = pd.concat([history, pd.Series([price])], ignore_index=True)
     assert signals.zscore(extended).iloc[-1] == pytest.approx(-2.0, abs=1e-6)
     assert price < history.iloc[-1]
+
+
+def test_complete_closes_drops_trailing_empty_row():
+    from riskeval.daily_orders import complete_closes
+
+    closes = _closes()
+    closes.loc[closes.index[-1] + pd.offsets.BDay(1)] = np.nan
+    cleaned = complete_closes(closes, list(closes.columns))
+    assert cleaned.index[-1] == closes.index[-2]
+
+
+def test_keep_rows_show_next_day_sell_line():
+    holdings = _holdings([["MU", "overlay", 5, 150.0, "2025-12-01"]])
+    closes = _closes(dip="MU")
+    orders = make_orders(closes, holdings, {"overlay_cash": 0, "overlay_slots": 2})
+    row = orders["keep"].iloc[0]
+    assert row["明日卖出线"] == pytest.approx(closes["MU"].iloc[-19:].mean())
+
+
+def test_last_closed_session_skips_weekend():
+    from riskeval.daily_orders import last_closed_session
+
+    saturday = pd.Timestamp("2026-10-17 12:00", tz="UTC")
+    assert last_closed_session(saturday) == pd.Timestamp("2026-10-16")
