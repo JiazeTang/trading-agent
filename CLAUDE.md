@@ -9,6 +9,7 @@
 - 当前计划和近期买点：`reports/当前计划与对比.md`
 - 每日操作单（GitHub Actions 每个交易日收盘后自动更新）：`reports/daily_orders/README.md`
 - 交易风格对比（日内、波段、动量、持有、均值回归）：`reports/style_compare/README.md`
+- 自动化系统调研与分阶段升级路线（模拟盘、对账、风控）：`reports/量化交易自动化系统调研.md`
 - 用户实际持仓：`portfolio/holdings.csv`、`portfolio/account.json`
 
 ## 当前方案（2026-10-19 确定）
