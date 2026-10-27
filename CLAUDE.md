@@ -9,6 +9,8 @@
 - 当前计划和近期买点：`reports/当前计划与对比.md`
 - 每日操作单（GitHub Actions 每个交易日收盘后自动更新）：`reports/daily_orders/README.md`
 - 交易风格对比（日内、波段、动量、持有、均值回归）：`reports/style_compare/README.md`
+- 策略体检（PSR、DSR、蒙特卡洛风险分布、事先定死的停用线）：`reports/strategy_health/README.md`
+- 抖音"量化 10 步"逐页评估（学习用网页）：`reports/量化十步拆解.html`
 - 自动化系统调研与分阶段升级路线（模拟盘、对账、风控）：`reports/量化交易自动化系统调研.md`
 - 用户实际持仓：`portfolio/holdings.csv`、`portfolio/account.json`
 
