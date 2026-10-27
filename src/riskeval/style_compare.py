@@ -219,6 +219,18 @@ def run_daily(ohlc: dict[str, pd.DataFrame], semis: list[str]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def net_daily_returns(equity: pd.Series, log: pd.DataFrame, cost: float, capital: float) -> pd.Series:
+    """structure_study.simulate 的净值扣掉单边成本（买入金额和卖出金额各收一次）后的日收益。"""
+    charges = pd.Series(0.0, index=equity.index)
+    for _, trade in log.iterrows():
+        for day, amount in [(trade["买入日"], trade["仓位"]), (trade["卖出日"], trade["仓位"] * (1 + trade["收益"]))]:
+            stamp = pd.Timestamp(day)
+            if stamp in charges.index:
+                charges[stamp] += amount * cost
+    adjusted = equity - charges.cumsum()
+    return adjusted.pct_change().fillna(adjusted.iloc[0] / capital - 1)
+
+
 def mean_reversion_rows(c: pd.DataFrame, semis: list[str]) -> list[dict]:
     from riskeval.structure_study import CAPITAL, VARIANTS, build_rules, simulate
 
@@ -228,14 +240,7 @@ def mean_reversion_rows(c: pd.DataFrame, semis: list[str]) -> list[dict]:
                        "M2 均值回归：核心60%SMH+规则A（当前方案）": "核心60% SMH + A加码(2仓)"}.items():
         equity, exposure, log = simulate(c[semis], c["SMH"], rules, START, **VARIANTS[key])
         for cost_name, cost in COSTS.items():
-            charges = pd.Series(0.0, index=equity.index)
-            for _, trade in log.iterrows():
-                for day, amount in [(trade["买入日"], trade["仓位"]), (trade["卖出日"], trade["仓位"] * (1 + trade["收益"]))]:
-                    stamp = pd.Timestamp(day)
-                    if stamp in charges.index:
-                        charges[stamp] += amount * cost
-            adjusted = equity - charges.cumsum()
-            daily = adjusted.pct_change().fillna(adjusted.iloc[0] / CAPITAL - 1)
+            daily = net_daily_returns(equity, log, cost, CAPITAL)
             turns = pd.Series(0.0, index=equity.index)
             for column in ["买入日", "卖出日"]:
                 for day in log[column]:

@@ -1,0 +1,39 @@
+# 下载 半导体、SMH、QQQ 的日线，跑策略体检（PSR、DSR、蒙特卡洛），只提交汇总结果（原始价格不提交）。
+name: strategy-health
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/vigilant-ride-f8334c]
+    paths:
+      - "src/riskeval/strategy_health.py"
+      - ".github/workflows/strategy-health.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strategy-health
+  cancel-in-progress: true
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev,study]"
+      - run: pytest -q
+      - run: python -m riskeval.strategy_health --out reports/strategy_health
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/strategy_health
+          git diff --cached --quiet && exit 0
+          git commit -m "Update strategy_health results"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
