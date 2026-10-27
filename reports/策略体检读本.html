@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>策略体检读本</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* 和《量化十步拆解》同一套版式：方格演算纸，一章一张卡片 */
+:root {
+  --paper: #f4f6f8;
+  --paper-grid: #e3e8ee;
+  --card: #ffffff;
+  --ink: #18212c;
+  --muted: #586473;
+  --rule: #d6dde5;
+  --accent: #1f4fa3;
+  --accent-soft: #e6edf8;
+  --ok: #23774a;
+  --ok-soft: #e3f2e9;
+  --warn: #8f5d00;
+  --warn-soft: #f7eed9;
+  --wrong: #b8322a;
+  --wrong-soft: #f8e4e2;
+  --font-display: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --font-body: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 6px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11161c; --paper-grid: #1a212a; --card: #171d24; --ink: #e5eaf0; --muted: #9ba7b5;
+    --rule: #2a333e; --accent: #86a9ee; --accent-soft: #1d2a40; --ok: #6fcf97; --ok-soft: #173025;
+    --warn: #e2b45c; --warn-soft: #33290f; --wrong: #ff8a80; --wrong-soft: #3a1c1a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11161c; --paper-grid: #1a212a; --card: #171d24; --ink: #e5eaf0; --muted: #9ba7b5;
+  --rule: #2a333e; --accent: #86a9ee; --accent-soft: #1d2a40; --ok: #6fcf97; --ok-soft: #173025;
+  --warn: #e2b45c; --warn-soft: #33290f; --wrong: #ff8a80; --wrong-soft: #3a1c1a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--paper-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--paper-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+}
+.wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 24px;
+}
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.35; margin: 0; }
+h1 { font-size: 1.75rem; font-weight: 800; }
+h2 { font-size: 1.25rem; font-weight: 800; display: flex; gap: 10px; align-items: baseline; }
+h2 .no { color: var(--accent); font-size: 0.95rem; font-family: var(--font-mono); font-weight: 600; flex: none; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-size: 12px; letter-spacing: 0.12em; color: var(--muted); }
+.lede { color: var(--muted); max-width: 64ch; }
+.chapter { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; display: grid; gap: 12px; min-width: 0; scroll-margin-top: 16px; }
+.oneline { font-weight: 500; border-left: 3px solid var(--accent); padding-left: 12px; }
+.ours { background: var(--accent-soft); border-radius: 4px; padding: 10px 14px; display: grid; gap: 4px; font-size: 14px; }
+.ours b:first-child { font-size: 12.5px; color: var(--accent); letter-spacing: .04em; }
+.caution { background: var(--warn-soft); border-radius: 4px; padding: 10px 14px; font-size: 14px; }
+.caution b { color: var(--warn); }
+.link { font-size: 13.5px; color: var(--muted); }
+.link b { color: var(--ink); font-weight: 500; }
+.formula { font-family: var(--font-mono); font-size: 0.92rem; background: var(--paper); border: 1px dashed var(--rule); border-radius: 4px; padding: 8px 12px; overflow-x: auto; white-space: nowrap; }
+ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.mono, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* 目录：一条主线 */
+.chain { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chain a { display: grid; grid-template-columns: 28px 1fr; gap: 2px 8px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 4px; background: var(--card); color: var(--ink); text-decoration: none; min-width: 0; }
+.chain a:hover { border-color: var(--accent); }
+.chain .n { font-family: var(--font-mono); color: var(--accent); font-weight: 600; grid-row: span 2; }
+.chain .t { font-weight: 500; font-size: 14px; }
+.chain .q { font-size: 12.5px; color: var(--muted); }
+
+/* 表格 */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+td.r, th.r { text-align: right; }
+td.hi { color: var(--ok); font-weight: 600; }
+td.bad { color: var(--wrong); font-weight: 600; }
+
+/* 实验台 */
+.lab-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px; }
+.field { display: grid; gap: 2px; min-width: 0; }
+.field label { font-size: 13px; color: var(--muted); }
+.field output { font-family: var(--font-mono); font-size: 1rem; font-weight: 600; }
+.field input[type="range"] { width: 100%; accent-color: var(--accent); }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+button.preset { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 4px; border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; }
+button.preset:hover, button.preset[aria-pressed="true"] { background: var(--accent); color: var(--card); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.results { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.result { border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.result span { font-size: 12.5px; color: var(--muted); }
+.result strong { font-family: var(--font-mono); font-size: 1.05rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.small { font-size: 13px; color: var(--muted); }
+
+/* 总流程 */
+.flow { list-style: none; padding: 0; display: grid; gap: 0; counter-reset: flow; }
+.flow li { display: grid; grid-template-columns: 32px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--rule); counter-increment: flow; }
+.flow li::before { content: counter(flow); font-family: var(--font-mono); font-weight: 600; color: var(--card); background: var(--accent); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; margin-top: 2px; }
+.flow li:last-child { border-bottom: 0; }
+footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--rule); padding-top: 14px; }
+
+@media (max-width: 560px) {
+  .chain, .lab-grid, .results { grid-template-columns: minmax(0, 1fr); }
+  .chapter { padding: 16px; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<header style="display:grid;gap:10px">
+  <div class="eyebrow">给自己的方案做体检 · 用到的全部知识</div>
+  <h1>策略体检读本</h1>
+  <p class="lede">整套体检只为回答一个问题：<b>这套方案值不值得长期执行？执行时会遇到什么？什么时候该停下来检查？</b>下面十章按顺序往上搭，后一章会用到前一章的东西。例子尽量用我们自己的数字：半导体部分 4000，其中 SMH 2400，规则 A 加码仓 1600。</p>
+</header>
+
+<nav aria-label="目录">
+  <ol class="chain">
+    <li><a href="#ch1"><span class="n">1</span><span class="t">收益和风险</span><span class="q">赚多少、颠簸多大、最多亏多少</span></a></li>
+    <li><a href="#ch2"><span class="n">2</span><span class="t">Sharpe</span><span class="q">把收益和颠簸合成一个数</span></a></li>
+    <li><a href="#ch3"><span class="n">3</span><span class="t">误差和 PSR</span><span class="q">过去的成绩里有多少是运气</span></a></li>
+    <li><a href="#ch4"><span class="n">4</span><span class="t">肥尾和偏度</span><span class="q">暴涨暴跌比教科书多</span></a></li>
+    <li><a href="#ch5"><span class="n">5</span><span class="t">最短业绩长度</span><span class="q">要几年才能分清本事和运气</span></a></li>
+    <li><a href="#ch6"><span class="n">6</span><span class="t">过拟合和 DSR</span><span class="q">试了很多版本，挑最好的那个</span></a></li>
+    <li><a href="#ch7"><span class="n">7</span><span class="t">蒙特卡洛</span><span class="q">模拟一万个"未来一年"</span></a></li>
+    <li><a href="#ch8"><span class="n">8</span><span class="t">停用线</span><span class="q">事先写好亏成什么样要停</span></a></li>
+    <li><a href="#ch9"><span class="n">9</span><span class="t">凯利和杠杆</span><span class="q">下多大的注</span></a></li>
+    <li><a href="#ch10"><span class="n">10</span><span class="t">回测的陷阱</span><span class="q">回测结果为什么总是偏好</span></a></li>
+  </ol>
+</nav>
+
+<!-- 1 -->
+<section class="chapter" id="ch1">
+  <h2><span class="no">01</span>收益和风险：两样都要看</h2>
+  <p class="oneline">只看赚了多少不够，还要看一路上颠簸多大、最难受的时候亏了多少。</p>
+  <p><b>年化收益</b>：把好几年的总收益折算成"平均每年赚多少"，按复利算。比如 3 年总共涨了 72.8%，相当于每年 20%，因为 1.2 × 1.2 × 1.2 = 1.728。</p>
+  <p><b>波动</b>：每天涨跌幅的典型大小，统计上叫"标准差"。日波动 2%，意思是平常一天涨跌 2% 左右很正常。换算成一年要乘 √252（一年约 252 个交易日），2% × 15.9 ≈ 32%。之所以乘根号而不是乘 252，是因为每天涨跌方向随机，会互相抵消一部分，起伏不会按天数等比例累积。</p>
+  <p><b>最大回撤</b>：账户从最高点跌到之后最低点的幅度，也就是"最难受的时候亏了多少"。它比波动更直观，也更重要，因为回本是不对称的：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>亏了</th><th class="r">10%</th><th class="r">20%</th><th class="r">33%</th><th class="r">50%</th><th class="r">80%</th></tr></thead>
+      <tbody><tr><td>要涨多少才回本</td><td class="r">11%</td><td class="r">25%</td><td class="r">50%</td><td class="r">100%</td><td class="r bad">400%</td></tr></tbody>
+    </table>
+  </div>
+  <p><b>水下天数</b>：账户低于前一个最高点的天数，衡量的是"多久没回本"。这一项在人的感受上往往比回撤幅度更折磨。</p>
+  <div class="ours"><b>我们的数字</b><p>体检里每个对象都算了这几样。比如当前方案，模拟出的一年里，最长水下天数的中位数是 81 天，差的情况是 214 天，也就是一年大部分时间都在"还没回本"。</p></div>
+</section>
+
+<!-- 2 -->
+<section class="chapter" id="ch2">
+  <h2><span class="no">02</span>Sharpe：把收益和颠簸合成一个数</h2>
+  <p class="oneline">Sharpe = 年化收益 ÷ 年化波动，意思是每承受一份颠簸，换来多少收益。</p>
+  <p>两个投资一年都赚 20%：A 平常上下晃动 10%，Sharpe = 2；B 平常上下晃动 40%，Sharpe = 0.5。赚得一样多，但 B 一路大起大落，更难拿住，也更可能在跌得最狠的时候被吓得卖掉。</p>
+  <p><b>为什么看比值，而不是只看收益？</b>收益可以靠加杠杆放大：借钱翻倍，收益翻倍，但波动也翻倍，比值不变。所以 Sharpe 衡量的是"方法本身好不好"，杠杆只决定"下多大的注"。第 9 章会用到这一点。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Sharpe</th><th>大致水平</th></tr></thead>
+      <tbody>
+        <tr><td class="num">0.4–0.5</td><td>长期持有美国股市大盘</td></tr>
+        <tr><td class="num">1 左右</td><td>很好</td></tr>
+        <tr><td class="num">3 以上</td><td>几乎只出现在回测里，见到要先怀疑（比如抖音那份的 3.42）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ours"><b>我们的数字（2016 年到 2026-10）</b><p>当前方案 1.16，规则 A 单独 1.08，SMH 一直持有 1.04，QQQ 一直持有 0.92。SMH 的中位收益其实比当前方案还高一点，但颠簸更大，所以 Sharpe 更低。</p></div>
+  <p class="link"><b>它没告诉你的：</b>Sharpe 只用"平均"和"波动"两个数描述收益，偶尔的一次暴跌会被平均掉，见第 4 章。严格的定义要先从收益里减去存款利息；体检里为了简单没有减，对几个对象之间的比较影响不大。</p>
+</section>
+
+<!-- 3 -->
+<section class="chapter" id="ch3">
+  <h2><span class="no">03</span>误差和 PSR：过去的成绩里有多少是运气</h2>
+  <p class="oneline">用过去的数据算出来的 Sharpe 有误差，误差大约是 1 ÷ √年数。PSR 就是根据这个误差，算出"真实 Sharpe 确实高于某个标准"的把握有多大。</p>
+  <p>抛 10 次硬币出现 7 次正面，很可能是碰巧；抛 1000 次出现 700 次正面，基本可以确定这枚硬币偏向正面。比例一样，可信度天差地别。过去十年的行情也只是"抛了一次"的结果，数据越长，算出来的 Sharpe 越接近真实水平。</p>
+  <div class="formula">Sharpe 的误差 ≈ 1 ÷ √年数</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>数据长度</th><th class="r">1 年</th><th class="r">4 年</th><th class="r">10.8 年</th><th class="r">25 年</th></tr></thead>
+      <tbody><tr><td>误差</td><td class="r">±1.0</td><td class="r">±0.5</td><td class="r">±0.30</td><td class="r">±0.2</td></tr></tbody>
+    </table>
+  </div>
+  <p>真实值大约有 95% 的可能落在"算出来的值 ± 2 倍误差"之内。</p>
+  <p><b>PSR 怎么算：</b>看 (Sharpe − 标准) 是误差的几倍，再换算成把握：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>是误差的几倍</th><th class="r">1</th><th class="r">1.645</th><th class="r">2</th><th class="r">3</th></tr></thead>
+      <tbody><tr><td>把握</td><td class="r">84%</td><td class="r">95%</td><td class="r">97.7%</td><td class="r">99.9%</td></tr></tbody>
+    </table>
+  </div>
+  <div class="ours"><b>我们的数字</b>
+    <p>当前方案 Sharpe 1.16，数据 10.8 年，误差 0.30，所以真实 Sharpe 大概率落在 0.56 到 1.76 之间。</p>
+    <p>PSR(&gt;0.5)：(1.16 − 0.5) ÷ 0.30 ≈ 2.2 倍误差，对应约 98.5%。表里是 98.3%，略低，原因见第 4 章。</p>
+    <p>SMH 1.04 的范围是 0.44 到 1.64，和当前方案大部分重叠。所以单看各自的 Sharpe，分不出谁更好。</p>
+  </div>
+  <p class="link"><b>接下来：</b>要比较两种做法，更准的办法是看"每天两者收益的差"。当前方案有 60% 就是 SMH，两者大部分起伏是共同的，相减之后误差会小很多。这就是还没做的那项检验。</p>
+</section>
+
+<!-- 4 -->
+<section class="chapter" id="ch4">
+  <h2><span class="no">04</span>肥尾和偏度：暴涨暴跌比教科书多</h2>
+  <p class="oneline">教科书常假设涨跌服从"正态分布"（钟形曲线），真实市场的极端日子比它多得多。只看平均和波动，会低估暴跌。</p>
+  <p>按正态分布，单日跌 5 倍日波动大约一万多年才发生一次；真实股市里，每隔几年就会出现。这种"尾巴比钟形曲线粗"的现象叫<b>肥尾</b>。</p>
+  <p><b>峰度</b>衡量极端日子多不多：正态分布是 3，越大说明极端日子越多。<b>偏度</b>衡量往哪边极端：负数说明偶尔大跌（左边尾巴长），正数说明偶尔大涨。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>对象</th><th class="r">峰度（正态 = 3）</th><th class="r">偏度</th></tr></thead>
+      <tbody>
+        <tr><td>当前方案</td><td class="r">9.0</td><td class="r">−0.22</td></tr>
+        <tr><td>规则 A 单独</td><td class="r bad">36.8</td><td class="r">+0.60</td></tr>
+        <tr><td>SMH 一直持有</td><td class="r">7.6</td><td class="r">−0.09</td></tr>
+        <tr><td>QQQ 一直持有</td><td class="r">10.3</td><td class="r">−0.19</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>规则 A 的峰度高达 36.8，是因为它大部分时间空仓，每天收益是 0，收益集中在持仓的少数几天里，有几天特别大。</p>
+  <p><b>为什么重要：</b></p>
+  <ul>
+    <li>PSR 会把峰度和偏度算进误差里：极端日子越多、左偏越重，误差越大，把握越低。这就是表里 PSR 比第 3 章的粗算略低的原因。</li>
+    <li>抖音那份第 2 页的模型（几何布朗运动）假设正态分布，所以会低估暴跌。</li>
+    <li>肥尾碰上杠杆最危险，见第 9 章。</li>
+  </ul>
+</section>
+
+<!-- 5 -->
+<section class="chapter" id="ch5">
+  <h2><span class="no">05</span>最短业绩长度：要几年才能分清本事和运气</h2>
+  <p class="oneline">把第 3 章倒过来用：要有 95% 的把握，(Sharpe − 标准) 至少要是误差的 1.645 倍。由此可以算出需要几年的数据。</p>
+  <div class="formula">需要的年数 ≈ ( 1.645 ÷ (Sharpe − 标准) )²</div>
+  <div class="ours"><b>我们的数字（标准取 0.5）</b>
+    <p>当前方案：(1.645 ÷ 0.66)² ≈ 6.2 年，考虑肥尾后表里是 6.5 年。</p>
+    <p>规则 A 单独：(1.645 ÷ 0.58)² ≈ 8 年。SMH：约 9.4 年。</p>
+  </div>
+  <p><b>这意味着什么：</b>回测有 10.8 年，够用了。但如果只看你自己从今天开始的实盘记录，要攒 6 到 8 年才能独立确认。实盘半年，就算 Sharpe 做到 1.2，把握也只有七成左右，和抛几次硬币差不多。所以<b>几个月的盈亏说明不了规则好坏</b>，不能凭短期结果改规则，只能靠第 8 章事先写好的停用线。</p>
+  <p class="link"><b>反过来想：</b>Sharpe 越高，需要的时间越短，Sharpe 3 的策略几个月就能看出来。真有这种策略，大机构早就用满了，这也是见到 3 以上要先怀疑的原因之一。</p>
+</section>
+
+<!-- 6 -->
+<section class="chapter" id="ch6">
+  <h2><span class="no">06</span>过拟合和 DSR：试了很多版本，挑最好的那个</h2>
+  <p class="oneline">试的版本越多，回测最好的那个就越可能是运气挑出来的。DSR 把这部分运气扣掉。</p>
+  <p>让 100 个人每人抛 10 次硬币，总会有人抛出 8、9 次正面。他并不比别人会抛，下一轮也不会更准。</p>
+  <p>回测也一样：换一个买点、卖点、仓位数、止损幅度，就相当于多抛一次硬币。最后挑回测成绩最好的那个，它的成绩里一定掺着运气。规则被调得"太贴合过去"，叫<b>过拟合</b>。</p>
+  <p><b>运气门槛</b>：假设试了 N 个其实毫无用处的版本，光靠运气，最好那个的 Sharpe 能有多高。它大约是"误差 × 一个随 N 变大的系数"：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>试过的版本数 N</th><th class="r">10</th><th class="r">50</th><th class="r">100</th></tr></thead>
+      <tbody>
+        <tr><td>系数</td><td class="r">1.6</td><td class="r">2.3</td><td class="r">2.5</td></tr>
+        <tr><td>运气门槛（10.8 年，误差 0.30）</td><td class="r">0.48</td><td class="r">0.69</td><td class="r">0.77</td></tr>
+        <tr><td>运气门槛（只用近 3.8 年，误差 0.51）</td><td class="r">0.80</td><td class="r">1.16</td><td class="r">1.29</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><b>DSR</b>（紧缩夏普比）就是把 PSR 的标准从 0.5 换成运气门槛，问：真实 Sharpe 高于"纯靠运气能达到的水平"的把握有多大。</p>
+  <div class="ours"><b>我们的数字（N = 50）</b>
+    <p>我们的项目到现在试过几十个版本，所以取 N = 50。</p>
+    <p>当前方案：全期 92.9%，近 3.8 年 72.0%。规则 A 单独：全期 89.7%，近 3.8 年只有 <b>54.4%</b>，几乎和抛硬币一样。</p>
+    <p>这些版本彼此很像，实际上相当于更少次的独立尝试，所以按 50 算是偏严的。</p>
+  </div>
+  <p><b>怎么防过拟合：</b>先定规则再回测；把规则写死在模块说明里；记下试过多少个版本；留一段数据锁起来，规则全部定好以后只看一次。这些正是你一直坚持的做法，DSR 是把这种纪律变成了一个数字。</p>
+</section>
+
+<!-- 实验台 -->
+<section class="chapter" id="lab">
+  <h2><span class="no">试</span>动手算：第 3、5、6 章合起来</h2>
+  <p class="small">拖动滑块看三件事怎么联动：数据越长误差越小；Sharpe 越高越容易确认；试的版本越多，门槛越高。这里用的是不考虑肥尾的简化算法，结果会比体检表略乐观一点。</p>
+  <div class="presets" role="group" aria-label="预设">
+    <button class="preset" type="button" data-sr="1.16" data-years="10.8" data-n="50">当前方案，10.8 年</button>
+    <button class="preset" type="button" data-sr="1.2" data-years="3.8" data-n="50">规则 A，近 3.8 年</button>
+    <button class="preset" type="button" data-sr="1.2" data-years="0.5" data-n="1">实盘半年，Sharpe 1.2</button>
+  </div>
+  <div class="lab-grid">
+    <div class="field"><label for="sr">算出来的 Sharpe</label><output id="sr-out" for="sr">1.16</output><input id="sr" type="range" min="0" max="3" step="0.02" value="1.16"></div>
+    <div class="field"><label for="years">数据长度（年）</label><output id="years-out" for="years">10.8</output><input id="years" type="range" min="0.5" max="25" step="0.1" value="10.8"></div>
+    <div class="field"><label for="n">试过的版本数 N</label><output id="n-out" for="n">50</output><input id="n" type="range" min="0" max="4" step="1" value="2"></div>
+  </div>
+  <div class="results" aria-live="polite">
+    <div class="result"><span>误差（1 ÷ √年数）</span><strong id="r-se">–</strong></div>
+    <div class="result"><span>真实 Sharpe 的 95% 范围</span><strong id="r-range">–</strong></div>
+    <div class="result"><span>PSR：真实 &gt; 0.5 的把握</span><strong id="r-psr">–</strong></div>
+    <div class="result"><span>确认 &gt; 0.5 需要几年</span><strong id="r-years">–</strong></div>
+    <div class="result"><span>运气门槛</span><strong id="r-hurdle">–</strong></div>
+    <div class="result"><span>DSR：真实 &gt; 运气门槛的把握</span><strong id="r-dsr">–</strong></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="chapter" id="ch7">
+  <h2><span class="no">07</span>蒙特卡洛：模拟一万个"未来一年"</h2>
+  <p class="oneline">历史只走过一条路。把历史切成小段随机重新拼接，就能得到一万条"可能的一年"，看好坏的分布。</p>
+  <p><b>蒙特卡洛</b>就是用随机数把一件事重复模拟很多次，名字来自摩纳哥的赌场。它有两种做法：</p>
+  <ul>
+    <li>先假设一个分布（比如正态分布）再从里面抽。抖音那份第 2 页就是这样做的，会低估暴跌（第 4 章）。</li>
+    <li>直接从真实的历史收益里抽，叫<b>重抽样</b>。我们用的是这种。</li>
+  </ul>
+  <p><b>为什么要一段一段地抽：</b>市场的涨跌会扎堆，大跌之后往往还有大波动。如果一天一天地抽，会把这种扎堆打散，低估连续下跌的风险。所以我们每次抽一整段（平均 20 个交易日）。</p>
+  <p><b>分位数怎么读：</b>把一万个结果从差到好排好队。排在第 500 个的就是"5% 分位"，意思是只有 5% 的情况比它更差，大约 20 年遇到一次。排在正中间第 5000 个的是中位数。</p>
+  <div class="ours"><b>我们的数字（当前方案，半导体部分 4000）</b>
+    <p>一年收益：中位 +32.9%（约 +1300），5% 分位 −10.3%（约 −400），1% 分位 −24.5%（约 −1000）。一年下来亏钱的概率 11.5%，大约 9 年里有 1 年。</p>
+    <p>一年内最大回撤：中位 −16.3%（约 650），5% 分位 −32.6%（约 1300）。</p>
+    <p>另外把规则 A 的每笔交易打乱重排，一年里最长连亏：中位 2 笔，99% 分位 4 笔。</p>
+  </div>
+  <div class="caution"><b>局限：</b>重抽样只能抽到历史上出现过的行情。2016–2026 年是半导体的大牛市，所以中位数偏乐观；历史上没出现过的更长、更深的熊市，它模拟不出来。左边的尾巴比中位数更值得记住。</div>
+</section>
+
+<!-- 8 -->
+<section class="chapter" id="ch8">
+  <h2><span class="no">08</span>停用线：事先写好亏成什么样要停</h2>
+  <p class="oneline">在亏钱之前，就把"亏到什么程度要停下来检查"写死。</p>
+  <p><b>为什么要事先写：</b>亏钱的时候人最容易做错，要么死扛，要么在最低点割肉。第 5 章说过，几年之内证明不了规则好坏，所以只能反过来，事先规定"坏到什么程度算异常"。</p>
+  <p><b>三条线从哪来：</b>都取自第 7 章的模拟，选的是正常情况下很少碰到的程度。只管规则 A 加码仓 1600。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>停用线</th><th class="r">数值</th><th class="r">约合</th><th>来源</th></tr></thead>
+      <tbody>
+        <tr><td>连续亏损超过</td><td class="r">4 笔</td><td class="r">—</td><td>逐笔重抽样的 99% 分位</td></tr>
+        <tr><td>从最高点回落超过</td><td class="r">32.7%</td><td class="r">约 520</td><td>模拟回撤的 95% 分位</td></tr>
+        <tr><td>最近 12 个月合计亏超过</td><td class="r">11.2%</td><td class="r">约 180</td><td>模拟收益的 5% 分位</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><b>碰线不等于规则坏了。</b>5% 分位本来就是"二十年左右碰一次"，过去十年里后两条都碰到过。所以动作是暂停规则 A 的新开仓、复盘，不是永久放弃。复盘时先看同期 SMH：一起跌，是行业不好；规则 A 明显比 SMH 跌得多，才是规则可能失效。SMH 核心仓和 REGN、VRTX 不受影响。</p>
+</section>
+
+<!-- 9 -->
+<section class="chapter" id="ch9">
+  <h2><span class="no">09</span>凯利和杠杆：下多大的注</h2>
+  <p class="oneline">仓位太小，增长慢；太大，长期反而会亏。最优仓位 = 超额收益 ÷ 波动²，实际要用的比它小得多。</p>
+  <p><b>波动拖累：</b>涨 50% 再跌 50%，不是回到原点，而是只剩 75%。长期看，增长速度 ≈ 平均收益 − 波动² ÷ 2。波动越大，被拖走的越多。</p>
+  <p><b>加杠杆时：</b>收益放大 L 倍，拖累却放大 L² 倍。所以杠杆有一个最优点，就是<b>凯利仓位</b>，超过它反而越加越差。</p>
+  <p>例子：超额收益 8%，波动 20%，凯利仓位 = 0.08 ÷ 0.2² = 2 倍。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>杠杆</th><th class="r">1 倍</th><th class="r">2 倍（凯利）</th><th class="r">3 倍</th><th class="r">4 倍</th><th class="r">5 倍</th></tr></thead>
+      <tbody>
+        <tr><td>收益 − 拖累</td><td class="r">8 − 2</td><td class="r">16 − 8</td><td class="r">24 − 18</td><td class="r">32 − 32</td><td class="r">40 − 50</td></tr>
+        <tr><td>长期年增长</td><td class="r">6%</td><td class="r hi">8%</td><td class="r">6%</td><td class="r">0</td><td class="r bad">−10%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><b>估错的代价：</b>如果真实的超额收益只有 4%（被高估了一倍），2 倍杠杆的长期增长就变成 8% − 8% = 0，白忙一场。回测出来的收益几乎总是偏高（第 6 章），所以实际只用 1/4 凯利或更少。</p>
+  <p><b>再加上肥尾：</b>L 倍杠杆下，标的单日跌 1/L 就会亏光，20 倍杠杆只要跌 5%。暴跌又比正态分布多（第 4 章），所以高杠杆迟早会碰上。</p>
+  <div class="ours"><b>和前面章节的关系</b>
+    <p>凯利仓位下的最高增长 = Sharpe² ÷ 2（第 2 章：Sharpe 是方法的好坏，凯利决定下多大的注）。抖音那份把回测 Sharpe 3.42 代进去，得到一年 347 倍，"640 亿"就是这么算出来的。它跳过了第 3、6 章：回测 Sharpe 有误差，还被挑选抬高了。</p>
+    <p>放到我们身上：半导体的波动比抖音例子里的 17.4% 大得多，SMH 在 30% 左右。凯利仓位也可以写成 Sharpe ÷ 波动。按打过折的 Sharpe（0.7 到 1）算，满凯利大约 2 到 4 倍，1/4 凯利大约 0.5 到 1 倍。我们不加杠杆，还留了现金，大致在 1/4 到 1/2 凯利之间，不该再往上加。</p>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="chapter" id="ch10">
+  <h2><span class="no">10</span>回测的陷阱：回测结果为什么总是偏好</h2>
+  <p class="oneline">以上所有数字都建立在回测上，而回测天生容易偏乐观。下面几项是我们已经处理的，以及还没法处理的。</p>
+  <ul>
+    <li><b>幸存者偏差</b>（未处理，要记住）：16 只半导体股是按今天的市值挑的，过去十年跌没了的公司不在名单里，所以规则 A 的回测偏乐观。SMH、QQQ 这类基金的成分会随时间调整，基本没有这个问题，结果更可信。不过"选半导体这个行业"本身也带着事后眼光，因为我们知道它过去十年涨得好。</li>
+    <li><b>交易成本</b>（已处理）：每笔买卖都扣了 0.05%。风格对比里看过，日内交易扣完成本就是亏的。</li>
+    <li><b>用到未来的信息</b>（已处理）：规则 A 要等收盘才知道信号，所以回测里是下一个交易日收盘才买，不会用到当时看不到的价格。</li>
+    <li><b>反复看同一段数据</b>（靠纪律）：留出的数据只用一次，看过就不能再拿它调规则（第 6 章）。</li>
+    <li><b>市场会变</b>（靠停用线兜底）：过去有效的规律，将来可能失效。没有任何回测能排除这一点，这也是第 8 章的停用线必须存在的原因。</li>
+  </ul>
+</section>
+
+<!-- 总流程 -->
+<section class="chapter" id="flow">
+  <h2><span class="no">合</span>串起来：一次完整的策略体检</h2>
+  <ol class="flow">
+    <li><p><b>先定规则，写死。</b>记下试过多少个版本（第 6、10 章）。</p></li>
+    <li><p><b>回测</b>：扣成本，不用当时看不到的信息（第 10 章）。</p></li>
+    <li><p><b>看收益、波动、回撤</b>，合成 Sharpe（第 1、2 章）。</p></li>
+    <li><p><b>问：是不是运气？</b>用 PSR，把误差和肥尾都算进去（第 3、4 章）。</p></li>
+    <li><p><b>问：是不是挑出来的运气？</b>用 DSR，把试过的版本数算进去（第 6 章）。</p></li>
+    <li><p><b>问：实盘要多久才能确认？</b>算最短业绩长度（第 5 章）。</p></li>
+    <li><p><b>问：未来一年会怎样？</b>用重抽样模拟，重点看左尾（第 7 章）。</p></li>
+    <li><p><b>定停用线</b>，碰线就暂停复盘（第 8 章）。</p></li>
+    <li><p><b>决定下多大的注</b>：不超过凯利仓位的零头（第 9 章）。</p></li>
+  </ol>
+  <div class="ours"><b>对我们方案的结论</b>
+    <p>过去十年确实赚钱，不是靠一两次运气（第 3–6 章）。但它比光拿 SMH 好多少，还没单独检验过，这是下一步。未来一年，半导体部分亏 400 左右属于正常范围，年内账面回落 1000 以上也可能发生（第 7 章）。用三条停用线兜底（第 8 章），不加杠杆（第 9 章），并且记住规则 A 的回测有幸存者偏差（第 10 章）。</p>
+  </div>
+</section>
+
+<footer>以上是对方法的讲解，数字来自规则输出加历史回测，不是投资建议。完整数字见仓库 reports/strategy_health/README.md，逐页核对抖音那份见 reports/量化十步拆解.html。</footer>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+// 标准正态分布的累积概率（Abramowitz–Stegun 近似）和它的反函数（二分法）
+function phi(z) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp(-z * z / 2);
+  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return z > 0 ? 1 - p : p;
+}
+function phiInv(p) {
+  let lo = -10, hi = 10;
+  for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; phi(mid) < p ? lo = mid : hi = mid; }
+  return (lo + hi) / 2;
+}
+const EULER = 0.5772156649;
+const N_STEPS = [1, 10, 50, 100, 1000];
+// 试 N 个没用的版本，最好那个的 Sharpe 期望约为 误差 × 系数（Bailey & López de Prado）
+const luckFactor = n => n <= 1 ? 0 : (1 - EULER) * phiInv(1 - 1 / n) + EULER * phiInv(1 - 1 / (n * Math.E));
+const pct = p => p > 0.999 ? "> 99.9%" : `${(p * 100).toFixed(1)}%`;
+
+function update() {
+  const sr = Number($("sr").value), years = Number($("years").value), n = N_STEPS[Number($("n").value)];
+  $("sr-out").textContent = sr.toFixed(2);
+  $("years-out").textContent = years.toFixed(1);
+  $("n-out").textContent = n === 1 ? "1（只试了这一个）" : String(n);
+  const se = 1 / Math.sqrt(years);
+  $("r-se").textContent = `±${se.toFixed(2)}`;
+  $("r-range").textContent = `${(sr - 1.96 * se).toFixed(2)} 到 ${(sr + 1.96 * se).toFixed(2)}`;
+  $("r-psr").textContent = pct(phi((sr - 0.5) / se));
+  $("r-years").textContent = sr > 0.5 ? `${Math.pow(1.645 / (sr - 0.5), 2).toFixed(1)} 年` : "永远确认不了";
+  const hurdle = se * luckFactor(n);
+  $("r-hurdle").textContent = n === 1 ? "0（没有挑选）" : hurdle.toFixed(2);
+  $("r-dsr").textContent = pct(phi((sr - hurdle) / se));
+}
+["sr", "years", "n"].forEach(id => $(id).addEventListener("input", () => {
+  document.querySelectorAll("button.preset").forEach(b => b.setAttribute("aria-pressed", "false"));
+  update();
+}));
+document.querySelectorAll("button.preset").forEach(btn => btn.addEventListener("click", () => {
+  $("sr").value = btn.dataset.sr;
+  $("years").value = btn.dataset.years;
+  $("n").value = N_STEPS.indexOf(Number(btn.dataset.n));
+  document.querySelectorAll("button.preset").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+  update();
+}));
+document.querySelector("button.preset").click();
+</script>
+</body>
+</html>
