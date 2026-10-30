@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>超跌波段研究</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* 和《策略体检读本》同一套版式 */
+:root {
+  --paper: #f4f6f8; --paper-grid: #e3e8ee; --card: #ffffff; --ink: #18212c; --muted: #586473; --rule: #d6dde5;
+  --accent: #1f4fa3; --accent-soft: #e6edf8; --ok: #23774a; --ok-soft: #e3f2e9; --warn: #8f5d00; --warn-soft: #f7eed9;
+  --wrong: #b8322a; --wrong-soft: #f8e4e2;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s0: #8a95a3;
+  --font-display: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --font-body: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 6px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11161c; --paper-grid: #1a212a; --card: #171d24; --ink: #e5eaf0; --muted: #9ba7b5; --rule: #2a333e;
+    --accent: #86a9ee; --accent-soft: #1d2a40; --ok: #6fcf97; --ok-soft: #173025; --warn: #e2b45c; --warn-soft: #33290f;
+    --wrong: #ff8a80; --wrong-soft: #3a1c1a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s0: #7d8896;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11161c; --paper-grid: #1a212a; --card: #171d24; --ink: #e5eaf0; --muted: #9ba7b5; --rule: #2a333e;
+  --accent: #86a9ee; --accent-soft: #1d2a40; --ok: #6fcf97; --ok-soft: #173025; --warn: #e2b45c; --warn-soft: #33290f;
+  --wrong: #ff8a80; --wrong-soft: #3a1c1a;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s0: #7d8896;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0; background-color: var(--paper);
+  background-image: linear-gradient(var(--paper-grid) 1px, transparent 1px), linear-gradient(90deg, var(--paper-grid) 1px, transparent 1px);
+  background-size: 24px 24px; color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.75;
+}
+.wrap {
+  max-width: 800px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 24px;
+}
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.35; margin: 0; }
+h1 { font-size: 1.75rem; font-weight: 800; }
+h2 { font-size: 1.25rem; font-weight: 800; display: flex; gap: 10px; align-items: baseline; }
+h2 .no { color: var(--accent); font-size: 0.95rem; font-family: var(--font-mono); font-weight: 600; flex: none; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-size: 12px; letter-spacing: 0.12em; color: var(--muted); }
+.lede { color: var(--muted); max-width: 64ch; }
+.card { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; display: grid; gap: 12px; min-width: 0; }
+.answer { border-left: 3px solid var(--accent); padding-left: 12px; font-weight: 500; }
+.ours { background: var(--accent-soft); border-radius: 4px; padding: 10px 14px; display: grid; gap: 4px; font-size: 14px; }
+.ours b:first-child { font-size: 12.5px; color: var(--accent); letter-spacing: .04em; }
+.caution { background: var(--warn-soft); border-radius: 4px; padding: 10px 14px; font-size: 14px; display: grid; gap: 4px; }
+.caution b:first-child { color: var(--warn); }
+ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.verdicts { display: grid; gap: 10px; }
+.verdict { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: start; }
+.verdict .tag { font-size: 12.5px; font-weight: 700; color: var(--accent); padding-top: 2px; letter-spacing: .04em; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+td.r, th.r { text-align: right; }
+tr.cur td { background: var(--accent-soft); }
+td.hi { color: var(--ok); font-weight: 600; }
+td.bad { color: var(--wrong); font-weight: 600; }
+.chip { display: inline-block; font-size: 12px; font-weight: 500; padding: 0 8px; border-radius: 999px; }
+.chip.ok { color: var(--ok); background: var(--ok-soft); }
+.chip.no { color: var(--wrong); background: var(--wrong-soft); }
+.chip.mid { color: var(--warn); background: var(--warn-soft); }
+.small { font-size: 13px; color: var(--muted); }
+.chart-box { position: relative; min-width: 0; }
+.chart-box svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 6px; }
+.legend i.dash { border-top-style: dashed; }
+.tip { position: absolute; pointer-events: none; background: var(--card); border: 1px solid var(--rule); border-radius: 4px; padding: 6px 10px; font-size: 12.5px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: 0 4px 14px color-mix(in srgb, var(--ink) 12%, transparent); }
+details summary { cursor: pointer; }
+footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--rule); padding-top: 14px; }
+@media (max-width: 560px) { .card { padding: 16px; } .verdict { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<header style="display:grid;gap:10px">
+  <div class="eyebrow">在规则 A 的基础上做波段 · 数据 2016-01 到 2026-10-29</div>
+  <h1>超跌波段研究</h1>
+  <p class="lede">问题有四个：什么时候买，什么时候卖，平均能赚多少，要承受多大的波动，以及换一种止损能不能把波动降下来。规则和判断标准在跑真实数据之前已经写死。数字来自 16 只半导体的回测，有幸存者偏差，所以主要看方案之间的相对差别，再用 S&amp;P 500 核对方向。</p>
+</header>
+
+<section class="card">
+  <h2><span class="no">答</span>先说结论</h2>
+  <div class="verdicts">
+    <div class="verdict"><span class="tag">买点</span><p>"跌破布林下轨、仍在 200 日线上方"这个信号确实有用，优势最集中在买入后第 3 到第 10 个交易日，之后还在慢慢累积，但每天多出来的只有前面的三分之一左右。买入后通常还会再跌一段：42 天内平均最深浮亏 8%，最低点一般出现在第 9 个交易日左右。等反弹确认再买、等跌得更深再买，都没有稳定地更好。</p></div>
+    <div class="verdict"><span class="tag">卖点</span><p>拿得更久，单笔赚得更多（5–6%，现行是 2.7%），但按"每天赚多少"算，回到中轨就卖仍然最高。多拿的那段时间里，赚的主要是跟着板块一起涨的钱，这部分你的 SMH 核心仓已经在赚了。</p></div>
+    <div class="verdict"><span class="tag">止损</span><p>7 种止损都没能在不伤收益的情况下明显降低波动，有几种反而让最大回撤更深。真正能把波动降下来的是仓位：按个股波动决定买多少。</p></div>
+    <div class="verdict"><span class="tag">决定</span><p>按事先写定的标准，现行规则（跌破下轨买、回到中轨卖、−20% 止损）不换。</p></div>
+  </div>
+</section>
+
+<section class="card" id="entry">
+  <h2><span class="no">01</span>什么时候买：信号出现后，价格平均怎么走</h2>
+  <p class="answer">买入后头 3 天，反而比随便哪天买还差，说明买在信号上并不等于买在底部。优势最集中在第 3 到第 10 个交易日：这 7 天比随便买多涨约 1.3 个百分点；第 10 到第 42 天再多涨约 1.8 个百分点，但摊到每天只有前面的三分之一。</p>
+  <div class="legend" id="legend"></div>
+  <div class="chart-box" id="chart-box"><svg id="chart" viewBox="0 0 720 340" role="img" aria-label="不同买点买入后平均累计收益随交易日的变化"></svg><div class="tip" id="tip" hidden></div></div>
+  <details>
+    <summary class="small">查看表格数据（16 只半导体，不扣成本）</summary>
+    <div class="table-wrap"><table id="entry-table"></table></div>
+  </details>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>买点</th><th class="r">次数</th><th class="r">20 天上涨比例</th><th class="r">42 天内平均最深浮亏</th><th class="r">最低点在第几天</th><th class="r">20 天平均：2016–22 / 2023 后</th></tr></thead>
+      <tbody>
+        <tr class="cur"><td>E1 跌破下轨（现行）</td><td class="r">343</td><td class="r">65.9%</td><td class="r">−8.2%</td><td class="r">9</td><td class="r">4.1% / 8.2%</td></tr>
+        <tr><td>E2 收回下轨且收涨再买</td><td class="r">334</td><td class="r">71.3%</td><td class="r">−7.9%</td><td class="r">9</td><td class="r">5.7% / 7.9%</td></tr>
+        <tr><td>E3 跌得更深（z ≤ −2.5）</td><td class="r">133</td><td class="r">66.9%</td><td class="r">−8.3%</td><td class="r">11</td><td class="r">3.2% / 5.4%</td></tr>
+        <tr><td>E4 板块普跌</td><td class="r">88</td><td class="r">65.9%</td><td class="r">−9.7%</td><td class="r">9</td><td class="r">2.9% / 17.1%</td></tr>
+        <tr><td>对照：随便哪天买</td><td class="r">5,396</td><td class="r">61.1%</td><td class="r">−8.7%</td><td class="r">14</td><td class="r">2.4% / 6.3%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li><b>等确认再买（E2）</b>：在半导体上，头几天更顺，20 天上涨比例从 66% 升到 71%。但优势只出现在 2023 年以前，S&amp;P 500 上也和现行差不多。证据不够，不改规则。</li>
+    <li><b>跌得更深再买（E3）</b>：反而更差，42 天平均收益（8.7%）和随便哪天买（8.6%）差不多。跌得特别狠，往往是真有坏消息。</li>
+    <li><b>板块普跌（E4）</b>：反弹最大（42 天平均 17.7%），但第二天平均还要再跌 0.4%，而且好成绩几乎全部来自 2023 年以后的少数几次大跌，只有 88 次，不稳定。</li>
+    <li><b>S&amp;P 500 核对</b>：跌破下轨比随便哪天买，5 天多赚 0.2 个百分点，42 天多赚 0.5 个百分点。方向一致，幅度比半导体小得多，而且优势基本都在头 5 天。</li>
+  </ul>
+  <div class="ours"><b>对你的意思</b><p>按规则买入后，先做好再跌一段的准备：平均最深浮亏 8%，一个 800 的仓位就是约 65。这是这套方法的常态，不是出错的信号。</p></div>
+</section>
+
+<section class="card" id="exit">
+  <h2><span class="no">02</span>什么时候卖：拿得越久，单笔赚得越多，但多赚的主要是"跟着板块涨"</h2>
+  <p class="answer">四种卖法都配现行的 −20% 止损。前四列是逐笔交易，后四列是按加码仓 1600、2 个仓位模拟的账户。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>卖法</th><th class="r">单笔平均</th><th class="r">胜率</th><th class="r">持有天数</th><th class="r">每天收益</th><th class="r">账户 Sharpe</th><th class="r">超额收益<br>2016–22 / 2023 后</th><th class="r">beta</th><th class="r">最大回撤</th></tr></thead>
+      <tbody>
+        <tr class="cur"><td>X1 回到中轨就卖（现行）</td><td class="r">2.7%</td><td class="r">78%</td><td class="r">9</td><td class="r hi">0.30%</td><td class="r">1.13</td><td class="r">12.3% / 9.5%</td><td class="r">0.36</td><td class="r">−30%</td></tr>
+        <tr><td>X2 涨到上轨才卖</td><td class="r">5.5%</td><td class="r">76%</td><td class="r">25</td><td class="r">0.22%</td><td class="r">1.16</td><td class="r">13.3% / 7.2%</td><td class="r">0.55</td><td class="r bad">−42%</td></tr>
+        <tr><td>X3 回到中轨后继续拿，跌回中轨下方才卖</td><td class="r">5.4%</td><td class="r">69%</td><td class="r">19</td><td class="r">0.28%</td><td class="r">1.29</td><td class="r">24.1% / <span style="color:var(--wrong)">1.4%</span></td><td class="r">0.54</td><td class="r">−33%</td></tr>
+        <tr><td>X4 固定拿 20 天</td><td class="r">4.8%</td><td class="r">65%</td><td class="r">19</td><td class="r">0.25%</td><td class="r">0.97</td><td class="r">9.2% / <span style="color:var(--wrong)">−0.4%</span></td><td class="r">0.53</td><td class="r bad">−43%</td></tr>
+        <tr><td>对照：1600 全买 SMH</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">1.05</td><td class="r">−1.0% / −8.3%</td><td class="r">0.88</td><td class="r bad">−45%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li><b>beta</b> 是"跟着 16 只半导体一起涨跌的程度"。拿得久的卖法，beta 从 0.36 升到 0.53–0.55，账户年化波动也从 24% 升到 30% 以上，和直接持有 SMH 差不多。</li>
+    <li><b>超额收益</b>是扣掉"跟着板块涨"之后剩下的部分，才是买卖时机本身的贡献。X3 全期看起来最好，但它的超额收益几乎全部来自 2023 年以前；2023 年以后只有 1.4%，现行是 9.5%。X4 在 2023 年以后是负的。</li>
+    <li><b>S&amp;P 500 核对</b>：每天收益现行 0.07%，其他三种 0.06–0.07%，没有一种更好。</li>
+  </ul>
+  <div class="ours"><b>对你的意思</b><p>你的方案里，SMH 核心仓 2400 负责赚板块上涨的钱，加码仓 1600 的任务是赚"超跌反弹"那一段额外的钱。回到中轨就卖，正好只拿这一段，然后把钱腾出来等下一次。改成拿更久，等于让加码仓也变成半个 SMH，和核心仓重复了。</p></div>
+</section>
+
+<section class="card" id="stops">
+  <h2><span class="no">03</span>要承受多大的波动，止损能不能降下来</h2>
+  <p class="answer">以现行卖法（回到中轨）为例，比较不止损、6 种止损和"按波动定仓位"。账户是加码仓 1600、2 个仓位，已扣成本。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>做法</th><th class="r">年化收益</th><th class="r">年化波动</th><th class="r">持仓时的波动</th><th class="r">最大回撤</th><th class="r">Sharpe</th><th class="r">超额收益</th><th class="r">止损触发</th><th>能降波动吗</th></tr></thead>
+      <tbody>
+        <tr><td>不止损</td><td class="r">32.3%</td><td class="r">25.1%</td><td class="r">37.5%</td><td class="r">−31.1%</td><td class="r">1.24</td><td class="r">14.1%</td><td class="r">—</td><td>基准</td></tr>
+        <tr><td>固定 −10%</td><td class="r">24.1%</td><td class="r">23.7%</td><td class="r">36.1%</td><td class="r bad">−43.2%</td><td class="r">1.03</td><td class="r">9.1%</td><td class="r">15%</td><td><span class="chip no">否，回撤更深</span></td></tr>
+        <tr class="cur"><td>固定 −20%（现行）</td><td class="r">27.3%</td><td class="r">23.8%</td><td class="r">35.8%</td><td class="r">−30.4%</td><td class="r">1.13</td><td class="r">11.1%</td><td class="r">6%</td><td><span class="chip mid">勉强算，效果很小</span></td></tr>
+        <tr><td>按个股波动：跌超 3σ</td><td class="r">20.3%</td><td class="r">23.9%</td><td class="r">37.0%</td><td class="r bad">−45.0%</td><td class="r">0.89</td><td class="r">6.3%</td><td class="r">25%</td><td><span class="chip no">否</span></td></tr>
+        <tr><td>移动止损：从最高点回落 3σ</td><td class="r">21.1%</td><td class="r">23.5%</td><td class="r">37.0%</td><td class="r bad">−40.9%</td><td class="r">0.93</td><td class="r">7.3%</td><td class="r">31%</td><td><span class="chip no">否</span></td></tr>
+        <tr><td>时间止损：10 天还亏就卖</td><td class="r">23.6%</td><td class="r">24.3%</td><td class="r">38.9%</td><td class="r bad">−38.1%</td><td class="r">0.99</td><td class="r">8.2%</td><td class="r">32%</td><td><span class="chip no">否</span></td></tr>
+        <tr><td>跌破 200 日线就卖</td><td class="r">16.7%</td><td class="r">23.0%</td><td class="r">36.1%</td><td class="r bad">−45.3%</td><td class="r">0.78</td><td class="r">3.8%</td><td class="r">22%</td><td><span class="chip no">否</span></td></tr>
+        <tr><td><b>不止损 + 按波动定仓位</b></td><td class="r">22.0%</td><td class="r hi">18.1%</td><td class="r hi">27.1%</td><td class="r hi">−26.0%</td><td class="r">1.19</td><td class="r">9.6%</td><td class="r">—</td><td><span class="chip ok">是</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">σ 是买入前 20 天的日波动；"持仓时的波动"只算手里有股票的日子。判断标准是事先写定的：两段的年化波动都更低、最大回撤更浅，而且 Sharpe 不低于不止损的九成。另外三种卖法里，止损最多也只降约 2 个百分点的波动（拿满 20 天那种，有几种止损勉强过线）；按波动定仓位都能降 7–10 个百分点，Sharpe 基本不变。</p>
+  <h3>为什么止损在这里不管用</h3>
+  <ol>
+    <li><b>止损卖在最可能反弹的地方。</b>这套方法买的就是"跌多了会弹回来"，再跌一段时卖掉，正好卖在反弹前。胜率因此从 78% 掉到 68–75%。</li>
+    <li><b>"回到中轨"自带一个慢止损。</b>股票一直跌，20 日均线也会跟着往下走，迟早"回到中轨"，以小亏出场。所以不止损时，最差 5% 的交易平均只亏 13.9%。</li>
+    <li><b>卖掉后仓位马上又被填上。</b>板块大跌时信号很多，止损腾出来的钱立刻买进下一只超跌股。亏损变成实亏，又承担新的风险，所以账户波动几乎没降，最大回撤反而更深。</li>
+    <li><b>跳空会穿过止损。</b>按收盘价判断的 −20% 止损，最差一笔实际亏了 29.7%。</li>
+  </ol>
+  <p class="small">学术上也有同样的结论：止损只在价格有"惯性"（涨的继续涨、跌的继续跌）时才有帮助，用在均值回归上会降低收益（Kaminski 与 Lo，2014）。</p>
+  <div class="ours"><b>换算成你的钱（加码仓 1600）</b>
+    <p>现行做法：年化波动 24%，相当于一年上下晃 380 左右；历史最大回撤 30%，约 490。手里有股票的日子，账户晃得像单只半导体股（年化 36%，一天 2% 左右很正常）。</p>
+    <p>按波动定仓位：年化波动 18%（约 290），最大回撤 26%（约 420），收益也相应少一些。它的作用其实是"波动大的股票少买点"，效果接近每笔少投三成的钱。</p>
+  </div>
+</section>
+
+<section class="card" id="decision">
+  <h2><span class="no">04</span>按事先写定的标准，结论是什么</h2>
+  <p>替换现行规则要同时满足四条：两段的 Sharpe 和超额收益都更高、最大回撤不更深、S&amp;P 500 上每天收益不更低、改进扣掉"试了 31 个方案"的运气之后仍有 95% 的把握。</p>
+  <ul>
+    <li>31 个备选里，只有"中轨后跟踪 + 按波动定仓位"通过了前两条，但扣掉运气后的把握只有 <b>17%</b>，远不到 95%。<b>现行规则不换。</b></li>
+    <li>"不止损"在两段的 Sharpe 和超额收益都比现行的 −20% 止损高，但最大回撤深了 0.7 个百分点，没通过。−20% 止损仍然保留：它防的是单只股票暴雷，而这 16 只是按今天的市值挑的，过去暴雷跌没了的公司本来就不在样本里，回测看不到这种风险。</li>
+    <li>"按波动定仓位"是唯一稳定有效的降波动办法，可以作为下一个候选：先写死规则，再用模拟盘跑一段时间，不直接改实盘。</li>
+  </ul>
+  <div class="caution"><b>局限</b>
+    <p>16 只半导体有幸存者偏差；2016–2026 是半导体大牛市；止损按收盘价判断，实际用止损单会在盘中成交，跳空时更差；成本按每次 0.05% 算。这次又试了 4 种买点和 32 个账户组合，项目累计试过的版本已经接近 90 个，以后算紧缩夏普比（DSR）时要计入。</p>
+  </div>
+</section>
+
+<footer>规则输出加历史回测，不是投资建议。完整表格见仓库 reports/swing_study/README.md，规则和判断标准见 src/riskeval/swing_study.py 开头的说明。</footer>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const DAYS = [0, 1, 3, 5, 10, 20, 42];
+const SERIES = [
+  { name: "E1 跌破下轨（现行）", color: "var(--s1)", v: [0, 0.10, 0.35, 1.53, 2.91, 5.58, 11.41] },
+  { name: "E2 确认后再买", color: "var(--s2)", v: [0, 0.50, 1.01, 1.61, 3.55, 6.45, 11.64] },
+  { name: "E3 跌得更深", color: "var(--s3)", v: [0, -0.05, 0.23, 1.19, 1.90, 3.80, 8.69] },
+  { name: "E4 板块普跌", color: "var(--s4)", v: [0, -0.44, 0.37, 1.53, 3.34, 7.28, 17.70] },
+  { name: "对照：随便哪天买", color: "var(--s0)", v: [0, 0.29, 0.66, 0.93, 1.88, 3.92, 8.55], dash: true }
+];
+// 终点太近的两条线合用一个标签：E1 与 E2、E3 与对照
+const LABELS = { 0: ["E1、E2", 1], 2: ["E3、对照", 4], 3: ["E4", 3] };
+
+function draw() {
+  const box = $("chart-box"), svg = $("chart");
+  const W = Math.round(Math.max(340, Math.min(720, box.clientWidth || 720)));
+  const H = W < 520 ? 300 : 340, m = { l: 48, r: 64, t: 14, b: 40 };
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const x = d => m.l + d / 42 * (W - m.l - m.r);
+  const y = v => m.t + (19 - v) / 21 * (H - m.t - m.b);
+  let out = "";
+  for (let v = -2; v <= 18; v += 4) {
+    out += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)" stroke-width="1"/>`;
+    out += `<text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--font-mono)">${v}%</text>`;
+  }
+  out += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-width="1"/>`;
+  [0, 5, 10, 20, 42].forEach(d => {
+    out += `<text x="${x(d)}" y="${H - m.b + 18}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--font-mono)">${d}</text>`;
+  });
+  out += `<text x="${(m.l + W - m.r) / 2}" y="${H - 4}" text-anchor="middle" font-size="12" fill="var(--muted)">买入后第几个交易日</text>`;
+  SERIES.forEach(s => {
+    const pts = DAYS.map((d, i) => `${x(d).toFixed(1)},${y(s.v[i]).toFixed(1)}`).join(" ");
+    out += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" ${s.dash ? 'stroke-dasharray="5 4"' : ""}/>`;
+  });
+  SERIES.forEach((s, i) => {
+    if (!(i in LABELS)) return;
+    const [text, pair] = LABELS[i];
+    const end = (s.v[6] + SERIES[pair].v[6]) / 2;
+    out += `<text x="${x(42) + 6}" y="${y(end) + 4}" font-size="12" fill="var(--ink)">${text}</text>`;
+  });
+  out += `<g id="hover" visibility="hidden"><line id="hline" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-width="1"/>`;
+  SERIES.forEach((s, i) => { out += `<circle id="hd${i}" r="4" fill="${s.color}" stroke="var(--card)" stroke-width="2"/>`; });
+  out += `</g><rect id="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/>`;
+  svg.innerHTML = out;
+
+  const tip = $("tip");
+  const move = evt => {
+    const r = svg.getBoundingClientRect();
+    const px = (evt.clientX - r.left) / r.width * W;
+    const d = (px - m.l) / (W - m.l - m.r) * 42;
+    let k = 0;
+    DAYS.forEach((dd, i) => { if (Math.abs(dd - d) < Math.abs(DAYS[k] - d)) k = i; });
+    $("hover").setAttribute("visibility", "visible");
+    $("hline").setAttribute("x1", x(DAYS[k])); $("hline").setAttribute("x2", x(DAYS[k]));
+    SERIES.forEach((s, i) => { const c = $(`hd${i}`); c.setAttribute("cx", x(DAYS[k])); c.setAttribute("cy", y(s.v[k])); });
+    tip.innerHTML = `第 ${DAYS[k]} 天<br>` + SERIES.map(s => `${s.name}：${s.v[k].toFixed(2)}%`).join("<br>");
+    tip.hidden = false;
+    const b = box.getBoundingClientRect();
+    let left = evt.clientX - b.left + 14;
+    if (left + tip.offsetWidth > b.width) left = evt.clientX - b.left - tip.offsetWidth - 14;
+    tip.style.left = `${Math.max(0, left)}px`;
+    tip.style.top = `${Math.max(0, evt.clientY - b.top - tip.offsetHeight - 10)}px`;
+  };
+  $("hit").addEventListener("pointermove", move);
+  $("hit").addEventListener("pointerdown", move);
+  $("hit").addEventListener("pointerleave", () => { $("hover").setAttribute("visibility", "hidden"); tip.hidden = true; });
+}
+$("legend").innerHTML = SERIES.map(s => `<span><i class="${s.dash ? "dash" : ""}" style="border-color:${s.color}"></i>${s.name}</span>`).join("");
+$("entry-table").innerHTML = `<thead><tr><th>买点</th>${DAYS.slice(1).map(d => `<th class="r">${d} 天</th>`).join("")}</tr></thead><tbody>` +
+  SERIES.map(s => `<tr><td>${s.name}</td>${s.v.slice(1).map(v => `<td class="r">${v.toFixed(2)}%</td>`).join("")}</tr>`).join("") + "</tbody>";
+draw();
+let lastW = 0;
+new ResizeObserver(e => { const w = Math.round(e[0].contentRect.width); if (w !== lastW) { lastW = w; draw(); } }).observe($("chart-box"));
+</script>
+</body>
+</html>
