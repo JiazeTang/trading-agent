@@ -1,4 +1,5 @@
 # 每个交易日收盘后生成操作单（reports/daily_orders/README.md）；有买卖操作时在"每日操作单" Issue 里留言提醒。
+# 同时记模拟盘（reports/paper_trading/README.md）：加码仓现行规则和"按波动定仓位"候选两本账。
 name: daily-orders
 
 on:
@@ -10,6 +11,7 @@ on:
     paths:
       - "portfolio/**"
       - "src/riskeval/daily_orders.py"
+      - "src/riskeval/paper_trading.py"
       - ".github/workflows/daily-orders.yml"
 
 permissions:
@@ -32,6 +34,9 @@ jobs:
       - run: pip install -e ".[dev,study]"
       - run: pytest -q
       - run: python -m riskeval.daily_orders --out reports/daily_orders
+      - name: Paper trading ledgers
+        continue-on-error: true   # 模拟盘出错不影响操作单
+        run: python -m riskeval.paper_trading --out reports/paper_trading
       - name: Notify on the issue when there is something to do
         if: github.event_name != 'push'
         env:
@@ -59,7 +64,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports/daily_orders
+          git add reports/daily_orders reports/paper_trading
           git diff --cached --quiet && exit 0
           git commit -m "Update daily orders"
           git pull --rebase origin "${GITHUB_REF_NAME}"

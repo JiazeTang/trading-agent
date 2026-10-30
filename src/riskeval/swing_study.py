@@ -187,7 +187,8 @@ def exit_reason(pos: dict, price: float, z: float, ma: float, exit_rule: str, st
             pos["armed"] = True
     if exit_rule == "hold20" and pos["held"] >= 20:
         return "出场"
-    if pos["held"] >= MAX_HOLD:
+    limit = pos.get("max_hold", MAX_HOLD)  # 模拟盘按实盘规则不设最长持有，传 None
+    if limit is not None and pos["held"] >= limit:
         return "到期"
     return None
 

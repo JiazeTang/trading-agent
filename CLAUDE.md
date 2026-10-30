@@ -8,6 +8,7 @@
 - 最新归档（方案、决策记录、所有关键回测数字）：`docs/归档/` 下日期最新的文件。
 - 当前计划和近期买点：`reports/当前计划与对比.md`
 - 每日操作单（GitHub Actions 每个交易日收盘后自动更新）：`reports/daily_orders/README.md`
+- 模拟盘（加码仓现行 vs 按波动定仓位，每日自动更新）：`reports/paper_trading/README.md`
 - 交易风格对比（日内、波段、动量、持有、均值回归）：`reports/style_compare/README.md`
 - 策略体检（PSR、DSR、蒙特卡洛风险分布、事先定死的停用线）：`reports/strategy_health/README.md`
 - 抖音"量化 10 步"逐页评估（学习用网页）：`reports/量化十步拆解.html`
@@ -22,6 +23,7 @@
 - 半导体加码仓：1600，分 2 个仓位。规则 A：16 只半导体股中，收盘跌破 20 日布林下轨（z ≤ -2）且在 200 日均线上方的，按 z 值从低到高排，下一个交易日收盘买入；收盘回到 20 日均线时当天收盘卖出（实操：收盘前价格 ≥ 前 19 日收盘均值就卖），较买入价跌 20% 止损。
 - 分散仓：REGN 1200、VRTX 1200，一直持有。
 - 现金 1600。
+- 模拟盘（2026-10-30 起，规则写死在 `src/riskeval/paper_trading.py`）：加码仓按现行规则（A，等额）和"按波动定仓位"候选（B）各记一本账，每天随操作单任务更新 `reports/paper_trading/README.md`。2027-04-30 之后且 A 完成至少 8 笔才评估是否把实盘加码仓改成 B，之前照常执行现行规则。
 - 16 只股票及分组见 `src/riskeval/mr_screen.py` 里的 `TARGETS`。
 
 ## 工作方式
