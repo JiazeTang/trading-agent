@@ -1,0 +1,39 @@
+# 下载 16 只半导体、SMH 和 S&P 500 的日线，跑波段交易研究（入场、出场、止损与波动），只提交汇总结果（原始价格不提交）。
+name: swing-study
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/vigilant-ride-f8334c]
+    paths:
+      - "src/riskeval/swing_study.py"
+      - ".github/workflows/swing-study.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: swing-study
+  cancel-in-progress: true
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev,study]"
+      - run: pytest -q
+      - run: python -m riskeval.swing_study --out reports/swing_study
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/swing_study
+          git diff --cached --quiet && exit 0
+          git commit -m "Update swing_study results"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
