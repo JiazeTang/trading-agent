@@ -117,3 +117,15 @@ def test_improvement_luck_check():
     better = base * np.cumprod(np.full(len(dates), 1.0008))
     assert improvement_dsr(better, base, 31) > 0.95
     assert improvement_dsr(noise, base, 31) < 0.95
+
+
+def test_payoff_ratio_and_breakeven():
+    from riskeval.swing_study import trade_stats
+
+    tr = pd.DataFrame({"date": pd.to_datetime(["2016-02-01"] * 4), "ret": [0.06, 0.04, 0.02, -0.12],
+                       "days": [5, 5, 5, 5], "mae": [0.0] * 4, "reason": ["出场"] * 4})
+    s = trade_stats(tr)
+    assert s["平均盈利"] == pytest.approx(0.04) and s["平均亏损"] == pytest.approx(-0.12)
+    assert s["盈亏比"] == pytest.approx(1 / 3)
+    assert s["保本所需胜率"] == pytest.approx(0.75)
+    assert s["利润因子"] == pytest.approx(0.12 / 0.12)

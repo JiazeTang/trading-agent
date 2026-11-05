@@ -251,8 +251,15 @@ def trade_stats(tr: pd.DataFrame) -> dict:
         return {"笔数": 0.0}
     r = tr["ret"]
     early = tr["date"] < SPLIT
+    wins, losses = r[r > 0], r[r <= 0]
+    avg_win = wins.mean() if len(wins) else np.nan
+    avg_loss = losses.mean() if len(losses) else np.nan
+    payoff = avg_win / -avg_loss if len(losses) and avg_loss < 0 else np.nan
     return {
         "笔数": float(len(tr)), "胜率": (r > 0).mean(), "平均收益": r.mean(), "中位收益": r.median(),
+        "平均盈利": avg_win, "平均亏损": avg_loss, "盈亏比": payoff,
+        "保本所需胜率": 1 / (1 + payoff) if payoff == payoff else np.nan,
+        "利润因子": wins.sum() / -losses.sum() if losses.sum() < 0 else np.nan,
         "收益标准差": r.std(), "最差5%平均": r[r <= r.quantile(0.05)].mean(), "最差一笔": r.min(),
         "平均持有天数": tr["days"].mean(), "平均每天收益": r.sum() / tr["days"].sum(),
         "平均最大浮亏": tr["mae"].mean(), "止损比例": (tr["reason"] == "止损").mean(),
@@ -448,7 +455,7 @@ def run(closes: pd.DataFrame, sp500: pd.DataFrame | None) -> dict[str, pd.DataFr
 
 
 NOT_PERCENT = {"平均持有天数", "最高点在第几天(中位)", "最低点在第几天(中位)", "每年交易笔数",
-               "Sharpe", "Sharpe·2016-22", "Sharpe·2023后", "Sharpe变化", "beta"}
+               "Sharpe", "Sharpe·2016-22", "Sharpe·2023后", "Sharpe变化", "beta", "盈亏比", "利润因子"}
 FINE_PERCENT = {"平均每天收益"} | {f"{h}天平均" for h in HORIZONS}
 
 
@@ -493,9 +500,15 @@ def write_report(results: dict, out: Path, data_end) -> None:
     ]
     if "events_sp500" in results:
         sections += _event_sections(results["events_sp500"], "S&P 500")
+    payoff_cols = ["出场", "止损", "胜率", "平均盈利", "平均亏损", "盈亏比", "保本所需胜率", "利润因子", "平均收益",
+                   "平均每天收益"]
+    payoff_note = ("盈亏比 = 平均盈利 ÷ 平均亏损（取绝对值）。保本所需胜率 = 1 ÷ (1 + 盈亏比)，实际胜率比它高得越多越好。"
+                   "利润因子 = 所有盈利之和 ÷ 所有亏损之和。")
     sections.append("## 二、出场和止损：逐笔（16 只半导体，已扣成本）\n\n" + _render(results["grid"][grid_cols]))
+    sections.append("## 二·补充：盈亏比（16 只半导体）\n\n" + payoff_note + "\n\n" + _render(results["grid"][payoff_cols]))
     if "grid_sp500" in results:
         sections.append("## 二、出场和止损：逐笔（S&P 500，已扣成本）\n\n" + _render(results["grid_sp500"][grid_cols]))
+        sections.append("## 二·补充：盈亏比（S&P 500）\n\n" + payoff_note + "\n\n" + _render(results["grid_sp500"][payoff_cols]))
     sections += [
         "## 三、账户层面：加码仓 1600、2 个仓位（16 只半导体，已扣成本）\n\n"
         "超额收益和 beta：对 16 只等权的日收益做回归。beta 是跟着板块涨跌的程度，超额收益是扣掉这部分之后剩下的年化收益。\n\n"
